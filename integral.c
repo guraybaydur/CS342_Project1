@@ -1,5 +1,5 @@
 
-
+#include <sys/wait.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 			//call child process function 
 			childsResult = giveToChild( (intL + ((double)(i-1))*(interval)), subInterval ,intK);
 			printf("result of child %d is: %f\n", i ,childsResult);
-			int res = write(filedes[1],&childsResult,sizeof(childsResult));
+			int res = write(fileDes[1],&childsResult,sizeof(childsResult));
 
 			//write(send) the child's result to parent
 			if(res == -1)
@@ -102,8 +102,8 @@ int main(int argc, char *argv[])
 			{
 				double y = 0.0;
 				double *x = &y;
-				wait();
-				read(fileDes[0],&x, sizeOf(double));
+				wait(NULL);
+				read(fileDes[0],&x, sizeof(double));
 				overallCalculation = overallCalculation + *x;	
 			}
 			
