@@ -1,4 +1,4 @@
-
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -36,20 +36,25 @@ int main(int argc, char *argv[])
   	printf ("The N value entered is %d.\n\n",intN);
 	
 
-//	pid_t parent = getpid();
+	pid_t parentId = getpid();
+	printf("parentId: %ld\n", (long)parentId);	
+
 	double interval = ((double)intU - (double)intL) / (double)intN ;
 	printf("the interval is: %f\n\n", interval);
 	
 	double overallCalculation = 0.0;
+
+	//initialize a filedescription pointer
+	int fileDes[intN][2];
 
 	//Create N child process
 	for(int i = 1; i <= intN; i++)
 	{
 		printf("going on i:  %d\n\n",i);
 
-		int fileDes[2];
+		
 
-		if(pipe(fileDes)== -1)
+		if(pipe(fileDes[i-1])== -1)
 		{
 			printf("pipe creation failed\n");
 		}
@@ -66,19 +71,20 @@ int main(int argc, char *argv[])
 
 			printf("Child Created\n");
 			
-			if(close(fileDes[0]) == 0)
+			//closing read end
+			if(close(fileDes[i-1][0]) == 0)
 			{	
 				printf("Read end of child closed\n\n");
 			}
 			else{printf("error while closing the child\n\n");}
 			
 			//compute the subinterval specific for child
-			double subInterval = (intL + ((double)(i))*(interval)) - (intL + ((double)(i-1))*(interval));							      printf("subInterval is : %f \n\n", subInterval);			
-
+			double subInterval = ((intL + ((double)(i))*(interval)) - (intL + ((double)(i-1))*(interval))) / (double) intK ;						   printf("subInterval is : %f \n\n", subInterval);			
+			
 			//call child process function 
 			childsResult = giveToChild( (intL + ((double)(i-1))*(interval)), subInterval ,intK);
 			printf("result of child %d is: %f\n", i ,childsResult);
-			int res = write(fileDes[1],&childsResult,sizeof(childsResult));
+			int res = write(fileDes[i-1][1],&childsResult,sizeof(childsResult));
 
 			//write(send) the child's result to parent
 			if(res == -1)
@@ -96,14 +102,31 @@ int main(int argc, char *argv[])
 		}
 		else //if no error exists and in parent
 		{
-			close(fileDes[1]);
+			//close(fileDes[1]);
+			
+
 			//Close write end
 			for(int p = 1; p < intN; p++)
 			{
 				double y = 0.0;
 				double *x = &y;
-				wait(NULL);
-				read(fileDes[0],&x, sizeof(double));
+				
+				int child = 0;
+			//	int *childId = &child;	
+				
+				int finishedpid = waitpid(child,NULL, 0);
+				
+				//long chId = (long)childId;
+				printf("terminated child: %d\n", finishedpid) ;
+				
+				//int cId = (int)chId;
+				int index = finishedpid - parentId-1;
+				printf("index is: %d\n", index);				
+
+	
+				read(fileDes[index][0],x, sizeof(double));
+				printf("x: %f\n", *x);
+				close(fileDes[index][1]);
 				overallCalculation = overallCalculation + *x;	
 			}
 			
